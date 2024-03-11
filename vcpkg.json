@@ -1,0 +1,8 @@
+{
+  "name": "webcrawler",
+  "version-string": "latest",
+  "dependencies": [
+    "libcurl-simple-https",
+    "gumbo"
+  ]
+}

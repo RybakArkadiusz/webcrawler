@@ -1,0 +1,25 @@
+Detecting compiler hash for triplet x64-linux...
+The following packages will be built and installed:
+    gumbo:x64-linux@0.10.1#6
+Restored 1 package(s) from /home/arek/.cache/vcpkg/archives in 13.6 ms. Use --debug to see more details.
+Installing 1/1 gumbo:x64-linux@0.10.1#6...
+Elapsed time to handle gumbo:x64-linux: 2.24 ms
+gumbo:x64-linux package ABI: 5f65da31056cc970c16717772ddf44472ec16a869ea8dbf1cc244c2b841ce96b
+Total install time: 2.25 ms
+gumbo provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(unofficial-gumbo CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE unofficial::gumbo::gumbo)
+
+gumbo provides pkg-config modules:
+
+    # A fully-compliant HTML5 parser.
+    gumbo
+
+libcurl-simple-https provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(libcurl-simple-https CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE libcurl-simple-https)
+

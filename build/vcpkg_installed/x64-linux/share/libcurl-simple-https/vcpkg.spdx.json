@@ -1,0 +1,109 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/libcurl-simple-https-x64-linux-2022-02-14-920da1dd-e155-4637-a5c6-752d5a309b02",
+  "name": "libcurl-simple-https:x64-linux@2022-02-14 44077a81c8e69ef37363ccdd6ea355331c881088184662f8ca7ee30e87d879c1",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-8a83681f921b10d86ae626fd833c253f4f8c355b"
+    ],
+    "created": "2024-03-08T11:44:30Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "libcurl-simple-https",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "2022-02-14",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libcurl-simple-https",
+      "licenseConcluded": "Apache-2.0 OR MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "Very simple HTTPS interface built atop libcurl",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "libcurl-simple-https:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "44077a81c8e69ef37363ccdd6ea355331c881088184662f8ca7ee30e87d879c1",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "Apache-2.0 OR MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-1",
+      "name": "SamuelMarks/curl-simple-https",
+      "downloadLocation": "git+https://github.com/SamuelMarks/curl-simple-https@5a115053ba4d249fc1af22c3673b4d014e56bcf5",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6274bfeec5235d39c627850b1b6ef03c3f1982c74f937b604137cf3cf87e982f971c4681760b42926a3fb15bc8268f2fa48c197919516066d73f53425aa24545"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/arek/Documents/vcpkg/ports/libcurl-simple-https/vcpkg.json",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4bd0bc375d390429589cbb9124e88cd745b5b624dd3b84c23d5933255863ee55"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/arek/Documents/vcpkg/ports/libcurl-simple-https/portfile.cmake",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "98ec9026edb1113676befbe8b2c9d7ef4f91111a4ec5da83ed23cb7d365a85e0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}
