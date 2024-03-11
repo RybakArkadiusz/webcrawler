@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/run.dir/main.cpp.o -o run  vcpkg_installed/x64-linux/lib/liblibcurl-simple-https.a -lCURL::libcurl 

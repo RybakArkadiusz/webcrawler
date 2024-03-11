@@ -1,3 +1,0 @@
-/home/arek/Documents/programming/C++/web_crawler/build/CMakeFiles/main.dir
-/home/arek/Documents/programming/C++/web_crawler/build/CMakeFiles/edit_cache.dir
-/home/arek/Documents/programming/C++/web_crawler/build/CMakeFiles/rebuild_cache.dir
