@@ -6,7 +6,12 @@
 #include <stack>
 #include <unordered_set>
 #include <cstring>
+#include <thread>
+#include <mutex>
+#include <chrono>
 
+
+//todo: error handling, waiting untill stack is empty and all threads are done instead of closing threads whenever stack is empty even if it can be filled up in a second
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){//tak to musi wyglądać żeby curl to przyjął czyli chyba bufor, contents to to co curl otrzymuje,size to size nmemb to to ile jest elementów w buforze a userp to wskaźnik na to w czym chcemy mieć zapisane dane np później do std::string
 	((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -39,6 +44,8 @@ std::vector<std::string> find_links(GumboNode* node) {
     return links;
 }
 
+
+
 int make_absolute_url(const std::string& base_url, std::vector<std::string>& links){
 	int count = 0;
 	for(auto& s:links){
@@ -50,53 +57,80 @@ int make_absolute_url(const std::string& base_url, std::vector<std::string>& lin
 	return count;
 }
 
+
+void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>& visited_urls, std::mutex& stack_mutex, std::mutex& list_mutex){
+	std::string url, readBuffer;
+	GumboOutput* g_output;
+	while(1){
+		{
+			std::lock_guard<std::mutex> lock(stack_mutex);
+			if(url_stack.empty()){
+				std::cout<<std::this_thread::get_id()<<" empty stack\n";
+				break;
+			}
+			url = url_stack.top();
+			url_stack.pop();
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(list_mutex);
+			if(visited_urls.find(url) != visited_urls.end()) {
+      	continue;
+    	}
+    	visited_urls.insert(url);
+		}
+
+		CURL *curl = curl_easy_init();
+		readBuffer.clear();
+
+		if(curl) {
+			CURLcode res;
+			curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+			res = curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
+	  }
+		const char *readBufferChar = readBuffer.c_str();
+		std::cout<<std::this_thread::get_id()<<":   "<<url<<"\n";
+
+		g_output = gumbo_parse(readBufferChar);
+		std::vector<std::string> extracted_links = find_links(g_output->root);
+
+		{
+			std::lock_guard<std::mutex> lock(stack_mutex);
+			for(const auto& link: extracted_links){
+				url_stack.push(link);
+			}
+		}
+	}
+}
+
+
+
 int main(void){
 	std::unordered_set<std::string> visited_urls;
 	std::stack<std::string> stack;
 	stack.push("https://pl.wikipedia.org/wiki/Robot_internetowy");
+	stack.push("https://www.google.com/");
+	stack.push("https://www.goal.com/en");
+	stack.push("https://www.livescore.com/en/");
+	stack.push("https://open.spotify.com/");
+	stack.push("https://www.foxnews.com/");
 
 
-	std::string readBuffer;
+	std::mutex stack_mutex, list_mutex;
 
-	while(!stack.empty()){
-		std::string base_url = stack.top();
-		stack.pop();
+	std::vector<std::thread> threads;
+	for(int i=0; i<6; ++i){
+		threads.push_back(std::thread(crawler, std::ref(stack), std::ref(visited_urls), std::ref(stack_mutex), std::ref(list_mutex)));
 
-		if(visited_urls.find(base_url) != visited_urls.end()) {
-      continue;
-    }
-    visited_urls.insert(base_url);		
-
-		std::cout<<base_url<<"\n";
-		CURL *curl = curl_easy_init();
-		readBuffer.clear();
-
-
-
-
-		if(curl) {
-			CURLcode res;
-			curl_easy_setopt(curl, CURLOPT_URL, base_url.c_str());//dodajemy adres, zawsze w setopt najpierw curl potem zależnie co chcemy zrobic
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);//podajemy naszą funkcję żebyśmy mogli z buforem zrobić to co chcemy
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);//no i dajemy wskaźnik na naszą zmienną z "odpowiedzią"
-			res = curl_easy_perform(curl);//tu się wszystko robi okok
-			curl_easy_cleanup(curl);//to zawsze na koniec ważne okok 
-	  }
-
-		const char *readBufferChar = readBuffer.c_str();
-
-		GumboOutput* output = gumbo_parse(readBufferChar);
-		std::vector<std::string> extracted_links = find_links(output->root);
-
-		// for(auto s:extracted_links){
-		// 	std::cout<<s<<"\n";
-		// }	
-		//make_absolute_url(base_url, extracted_links);
-
-		for(const auto& link: extracted_links){
-			stack.push(link);
-		}
 	}
+
+	for (auto& thread : threads) {
+		thread.join();
+	}
+
 
 	return 0;
 }
