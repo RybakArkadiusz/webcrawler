@@ -11,7 +11,7 @@
 #include <chrono>
 
 
-//todo: error handling, waiting untill stack is empty and all threads are done instead of closing threads whenever stack is empty even if it can be filled up in a second
+//todo: waiting untill stack is empty and all threads are done instead of closing threads whenever stack is empty even if it can be filled up in a second
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){//tak to musi wyglądać żeby curl to przyjął czyli chyba bufor, contents to to co curl otrzymuje,size to size nmemb to to ile jest elementów w buforze a userp to wskaźnik na to w czym chcemy mieć zapisane dane np później do std::string
 	((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -61,24 +61,30 @@ int make_absolute_url(const std::string& base_url, std::vector<std::string>& lin
 void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>& visited_urls, std::mutex& stack_mutex, std::mutex& list_mutex){
 	std::string url, readBuffer;
 	GumboOutput* g_output;
+	bool flag = 1;
 	while(1){
-		{
+		if(flag){
 			std::lock_guard<std::mutex> lock(stack_mutex);
 			if(url_stack.empty()){
-				std::cout<<std::this_thread::get_id()<<" empty stack\n";
-				break;
+				//std::cerr<<std::this_thread::get_id()<<" empty stack\n";
+				continue;
 			}
 			url = url_stack.top();
 			url_stack.pop();
 		}
 
+		
+
 		{
 			std::lock_guard<std::mutex> lock(list_mutex);
 			if(visited_urls.find(url) != visited_urls.end()) {
+				flag = 1;
       	continue;
     	}
     	visited_urls.insert(url);
 		}
+
+		std::cout<<std::this_thread::get_id()<<":   "<<url<<"\n";
 
 		CURL *curl = curl_easy_init();
 		readBuffer.clear();
@@ -90,12 +96,22 @@ void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 			res = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
+			if(res!=CURLE_OK){
+				std::cerr<<std::this_thread::get_id()<<":   error with getting html from: "<<url<<"\n";
+				flag = 1;
+				continue;
+			}
 	  }
 		const char *readBufferChar = readBuffer.c_str();
-		std::cout<<std::this_thread::get_id()<<":   "<<url<<"\n";
+		
 
 		g_output = gumbo_parse(readBufferChar);
 		std::vector<std::string> extracted_links = find_links(g_output->root);
+		if(extracted_links.size()>0){
+			url = extracted_links.back();
+			extracted_links.pop_back();
+			flag = 0;
+		}
 
 		{
 			std::lock_guard<std::mutex> lock(stack_mutex);
