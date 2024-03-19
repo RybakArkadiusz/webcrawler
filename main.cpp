@@ -3,15 +3,17 @@
 #include <curl/curl.h>
 #include <gumbo.h>
 #include <vector>
-#include <stack>
+#include <queue>
 #include <unordered_set>
 #include <cstring>
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <fstream>
 
 
-//todo: waiting untill stack is empty and all threads are done instead of closing threads whenever stack is empty even if it can be filled up in a second
+std::string _FILENAME = "img.txt";
+//todo: waiting untill queue is empty and all threads are done instead of closing threads whenever queue is empty even if it can be filled up in a second
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){//tak to musi wyglądać żeby curl to przyjął czyli chyba bufor, contents to to co curl otrzymuje,size to size nmemb to to ile jest elementów w buforze a userp to wskaźnik na to w czym chcemy mieć zapisane dane np później do std::string
 	((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -44,6 +46,30 @@ std::vector<std::string> find_links(GumboNode* node) {
     return links;
 }
 
+std::vector<std::string> find_image_links(GumboNode* node){
+	std::vector<std::string> links;
+	if (node->type != GUMBO_NODE_ELEMENT) {
+    return links;
+  }
+
+  if (node->v.element.tag == GUMBO_TAG_IMG &&
+    	gumbo_get_attribute(&node->v.element.attributes, "src")) {
+    const char* src = gumbo_get_attribute(&node->v.element.attributes, "src")->value;
+    links.push_back(src);
+  }
+
+  GumboVector* children = &node->v.element.children;
+  for (unsigned int i = 0; i < children->length; ++i) {
+    GumboNode* child_node = static_cast<GumboNode*>(children->data[i]);
+    std::vector<std::string> child_images = find_image_links(child_node);
+    links.insert(links.end(), child_images.begin(), child_images.end());
+  }
+
+  return links;
+
+}
+
+
 
 
 int make_absolute_url(const std::string& base_url, std::vector<std::string>& links){
@@ -58,19 +84,21 @@ int make_absolute_url(const std::string& base_url, std::vector<std::string>& lin
 }
 
 
-void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>& visited_urls, std::mutex& stack_mutex, std::mutex& list_mutex){
+void crawler(std::queue<std::string>& url_queue, std::unordered_set<std::string>& visited_urls, std::mutex& queue_mutex, std::mutex& list_mutex, std::mutex& file_mutex){
 	std::string url, readBuffer;
 	GumboOutput* g_output;
 	bool flag = 1;
+	std::vector<std::string> extracted_image_links;
+
 	while(1){
 		if(flag){
-			std::lock_guard<std::mutex> lock(stack_mutex);
-			if(url_stack.empty()){
-				//std::cerr<<std::this_thread::get_id()<<" empty stack\n";
+			std::lock_guard<std::mutex> lock(queue_mutex);
+			if(url_queue.empty()){
+				//std::cerr<<std::this_thread::get_id()<<" empty queue\n";
 				continue;
 			}
-			url = url_stack.top();
-			url_stack.pop();
+			url = url_queue.front();
+			url_queue.pop();
 		}
 
 		
@@ -84,7 +112,7 @@ void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>
     	visited_urls.insert(url);
 		}
 
-		std::cout<<std::this_thread::get_id()<<":   "<<url<<"\n";
+		//std::cout<<std::this_thread::get_id()<<":   "<<url<<"\n";
 
 		CURL *curl = curl_easy_init();
 		readBuffer.clear();
@@ -107,6 +135,27 @@ void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>
 
 		g_output = gumbo_parse(readBufferChar);
 		std::vector<std::string> extracted_links = find_links(g_output->root);
+
+		std::vector<std::string> temp_image_links = find_image_links(g_output->root);
+		extracted_image_links.insert(extracted_image_links.end(), temp_image_links.begin(), temp_image_links.end());
+
+		if(extracted_image_links.size()>100){
+			std::lock_guard<std::mutex> lock(file_mutex);
+			std::ofstream out;
+			out.open(_FILENAME, std::ios_base::app);
+
+		  for (const auto& image : extracted_image_links) {
+    		out << image << std::endl;
+  		}
+  		out.close();
+
+  		extracted_image_links.clear();
+  		std::cout<<"added 100 urls :) \n";
+		}
+
+
+
+
 		if(extracted_links.size()>0){
 			url = extracted_links.back();
 			extracted_links.pop_back();
@@ -114,9 +163,9 @@ void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>
 		}
 
 		{
-			std::lock_guard<std::mutex> lock(stack_mutex);
+			std::lock_guard<std::mutex> lock(queue_mutex);
 			for(const auto& link: extracted_links){
-				url_stack.push(link);
+				url_queue.push(link);
 			}
 		}
 	}
@@ -126,20 +175,21 @@ void crawler(std::stack<std::string>& url_stack, std::unordered_set<std::string>
 
 int main(void){
 	std::unordered_set<std::string> visited_urls;
-	std::stack<std::string> stack;
-	stack.push("https://pl.wikipedia.org/wiki/Robot_internetowy");
-	stack.push("https://www.google.com/");
-	stack.push("https://www.goal.com/en");
-	stack.push("https://www.livescore.com/en/");
-	stack.push("https://open.spotify.com/");
-	stack.push("https://www.foxnews.com/");
+	std::queue<std::string> queue;
+	queue.push("https://www.pexels.com/");
+	queue.push("https://pixabay.com/");
+	queue.push("https://www.freepik.com/");
+	
+	queue.push("https://www.shutterstock.com/");
+	queue.push("https://unsplash.com/");
+	queue.push("https://www.flickr.com/");
 
 
-	std::mutex stack_mutex, list_mutex;
+	std::mutex queue_mutex, list_mutex, file_mutex;
 
 	std::vector<std::thread> threads;
 	for(int i=0; i<6; ++i){
-		threads.push_back(std::thread(crawler, std::ref(stack), std::ref(visited_urls), std::ref(stack_mutex), std::ref(list_mutex)));
+		threads.push_back(std::thread(crawler, std::ref(queue), std::ref(visited_urls), std::ref(queue_mutex), std::ref(list_mutex), std::ref(file_mutex)));
 
 	}
 
