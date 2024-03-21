@@ -3,6 +3,7 @@
   "version-string": "latest",
   "dependencies": [
     "libcurl-simple-https",
-    "gumbo"
+    "gumbo",
+    "mysql-connector-cpp"
   ]
 }
