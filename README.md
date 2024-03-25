@@ -6,11 +6,16 @@ This C++ project is a multithreaded web crawler designed to scrape images from v
 Usage
 
 To use the compiled program, you'll need to provide your MySQL database credentials (username and password) as command-line arguments. Here's an example command:
+
 ./main username password
+
 Replace username and password with your MySQL credentials.
 
 Dependencies
 
 libcurl: https://curl.se/libcurl/
+
 Gumbo HTML Parser: https://github.com/google/gumbo-parser
+
 MySQL Connector/C++: https://dev.mysql.com/doc/connector-cpp/8.3/en/
+
